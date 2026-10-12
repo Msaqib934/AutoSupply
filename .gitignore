@@ -1,0 +1,34 @@
+# Local Portable Tools
+.local/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Node & Next.js
+node_modules/
+frontend/node_modules/
+.next/
+frontend/.next/
+out/
+frontend/out/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment & Credentials
+.env
+*.local
+*.log
+
+# Operating System
+.DS_Store
+Thumbs.db

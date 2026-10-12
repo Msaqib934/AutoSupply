@@ -1,0 +1,115 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: autosupply-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-autosupply}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-autosupply}
+      POSTGRES_DB: autosupply
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autosupply -d autosupply"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  auth-service:
+    build:
+      context: ./backend/services/auth_service
+      dockerfile: Dockerfile
+    container_name: autosupply-auth-service
+    restart: unless-stopped
+    environment:
+      AUTH_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-autosupply}:${POSTGRES_PASSWORD:-autosupply}@db:5432/autosupply_auth
+      JWT_SECRET: ${JWT_SECRET:-dev-only-insecure-secret-change-me}
+      APP_ENV: development
+    ports:
+      - "8001:8001"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  supplier-service:
+    build:
+      context: ./backend/services/supplier_service
+      dockerfile: Dockerfile
+    container_name: autosupply-supplier-service
+    restart: unless-stopped
+    environment:
+      SUPPLIER_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-autosupply}:${POSTGRES_PASSWORD:-autosupply}@db:5432/autosupply_supplier
+      JWT_SECRET: ${JWT_SECRET:-dev-only-insecure-secret-change-me}
+      APP_ENV: development
+    ports:
+      - "8002:8002"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  component-service:
+    build:
+      context: ./backend/services/component_service
+      dockerfile: Dockerfile
+    container_name: autosupply-component-service
+    restart: unless-stopped
+    environment:
+      COMPONENT_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-autosupply}:${POSTGRES_PASSWORD:-autosupply}@db:5432/autosupply_component
+      JWT_SECRET: ${JWT_SECRET:-dev-only-insecure-secret-change-me}
+      APP_ENV: development
+    ports:
+      - "8003:8003"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  order-service:
+    build:
+      context: ./backend/services/order_service
+      dockerfile: Dockerfile
+    container_name: autosupply-order-service
+    restart: unless-stopped
+    environment:
+      ORDER_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-autosupply}:${POSTGRES_PASSWORD:-autosupply}@db:5432/autosupply_order
+      SUPPLIER_SERVICE_URL: http://supplier-service:8002
+      COMPONENT_SERVICE_URL: http://component-service:8003
+      JWT_SECRET: ${JWT_SECRET:-dev-only-insecure-secret-change-me}
+      APP_ENV: development
+    ports:
+      - "8004:8004"
+    depends_on:
+      db:
+        condition: service_healthy
+      supplier-service:
+        condition: service_started
+      component-service:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: autosupply-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      AUTH_SERVICE_URL: http://auth-service:8001
+      SUPPLIER_SERVICE_URL: http://supplier-service:8002
+      COMPONENT_SERVICE_URL: http://component-service:8003
+      ORDER_SERVICE_URL: http://order-service:8004
+    ports:
+      - "3000:3000"
+    depends_on:
+      - auth-service
+      - supplier-service
+      - component-service
+      - order-service
+
+volumes:
+  pgdata:
