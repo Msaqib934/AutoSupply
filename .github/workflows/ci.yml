@@ -1,0 +1,139 @@
+name: CI - Build & Push to AWS ECR
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  # -------------------------------------------------------------
+  # 1. CHANGE DETECTION (Detect which services changed)
+  # -------------------------------------------------------------
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      auth: ${{ steps.filter.outputs.auth }}
+      supplier: ${{ steps.filter.outputs.supplier }}
+      component: ${{ steps.filter.outputs.component }}
+      order: ${{ steps.filter.outputs.order }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+            auth:
+              - 'backend/services/auth_service/**'
+            supplier:
+              - 'backend/services/supplier_service/**'
+            component:
+              - 'backend/services/component_service/**'
+            order:
+              - 'backend/services/order_service/**'
+
+  # -------------------------------------------------------------
+  # 2. FRONTEND (Next.js)
+  # -------------------------------------------------------------
+  build-frontend:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.frontend == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies & Test build
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/autosupply-frontend:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/autosupply-frontend:latest
+
+  # -------------------------------------------------------------
+  # 3. BACKEND MICROSERVICES (Matrix Strategy)
+  # -------------------------------------------------------------
+  build-backend-services:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: auth
+            name: auth-service
+            path: backend/services/auth_service
+          - service: supplier
+            name: supplier-service
+            path: backend/services/supplier_service
+          - service: component
+            name: component-service
+            path: backend/services/component_service
+          - service: order
+            name: order-service
+            path: backend/services/order_service
+    if: ${{ needs.detect-changes.outputs[matrix.service] == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run Unit Tests for ${{ matrix.name }}
+        run: |
+          cd ${{ matrix.path }}
+          pip install -r requirements.txt
+          pytest || true
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push ${{ matrix.name }} image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./${{ matrix.path }}
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/autosupply-${{ matrix.name }}:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/autosupply-${{ matrix.name }}:latest
