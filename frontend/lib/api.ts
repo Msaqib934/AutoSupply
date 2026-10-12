@@ -12,10 +12,18 @@ export class ApiError extends Error {
   }
 }
 
+const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/+$/, "");
+
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const url =
+    path.startsWith("http://") || path.startsWith("https://")
+      ? path
+      : `${BASE_URL}${normalizedPath}`;
+
   const headers = new Headers(options.headers || {});
   if (!headers.has("Content-Type") && options.body && typeof options.body === "string") {
     headers.set("Content-Type", "application/json");
@@ -25,7 +33,7 @@ export async function apiFetch<T>(
     headers.set("X-Requested-With", "XMLHttpRequest");
   }
 
-  const res = await fetch(path, {
+  const res = await fetch(url, {
     ...options,
     headers,
     credentials: "include",
