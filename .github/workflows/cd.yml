@@ -1,0 +1,53 @@
+name: CD - Deploy with ArgoCD
+
+on:
+  workflow_run:
+    workflows: ["CI - Build & Push to AWS ECR"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  update-manifests:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Update Image Tags in Kustomize
+        run: |
+          cd k8s/overlays/prod
+          REGISTRY="${{ steps.login-ecr.outputs.registry }}"
+          TAG="${{ github.event.workflow_run.head_sha }}"
+
+          kustomize edit set image autosupply-frontend=$REGISTRY/autosupply-frontend:$TAG
+          kustomize edit set image autosupply-auth-service=$REGISTRY/autosupply-auth-service:$TAG
+          kustomize edit set image autosupply-supplier-service=$REGISTRY/autosupply-supplier-service:$TAG
+          kustomize edit set image autosupply-component-service=$REGISTRY/autosupply-component-service:$TAG
+          kustomize edit set image autosupply-order-service=$REGISTRY/autosupply-order-service:$TAG
+
+      - name: Commit & Push to Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add k8s/overlays/prod/kustomization.yaml
+          if git diff --staged --quiet; then
+            echo "No manifest changes to commit."
+          else
+            git commit -m "chore(cd): bump k8s manifests to ${{ github.event.workflow_run.head_sha }} [skip ci]"
+            git push origin main
+          fi

@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: autosupply-hub
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  # -------------------------------------------------------------
+  # SOURCE: Defines the Git repository, branch, and manifests path
+  # -------------------------------------------------------------
+  source:
+    repoURL: https://github.com/Msaqib934/AutoSupply.git
+    targetRevision: main
+    path: k8s/overlays/prod
+
+  # -------------------------------------------------------------
+  # DESTINATION: Defines the Kubernetes cluster and target namespace
+  # -------------------------------------------------------------
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: autosupply
+
+  # -------------------------------------------------------------
+  # SYNC POLICY: Automated sync, self-healing, and pruning
+  # -------------------------------------------------------------
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
