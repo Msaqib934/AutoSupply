@@ -14,6 +14,7 @@ spec:
       labels:
         app: order-service
     spec:
+      serviceAccountName: my-app-sa
       containers:
         - name: order-service
           image: autosupply-order-service:latest
@@ -23,16 +24,28 @@ spec:
           env:
             - name: PORT
               value: "8004"
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: autosupply-secrets
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: autosupply-secrets
+                  key: DB_PASSWORD
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: autosupply-secrets
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: autosupply-secrets
+                  key: DB_PORT
             - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: autosupply-secrets
-                  key: ORDER_DATABASE_URL
-            - name: SECRET_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: autosupply-secrets
-                  key: SECRET_KEY
+              value: "postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/autosupply_order"
             - name: SUPPLIER_SERVICE_URL
               value: "http://supplier-service:8002"
             - name: COMPONENT_SERVICE_URL
@@ -44,6 +57,17 @@ spec:
             limits:
               cpu: 500m
               memory: 256Mi
+          volumeMounts:
+            - name: secrets-store-inline
+              mountPath: "/mnt/secrets-store"
+              readOnly: true
+      volumes:
+        - name: secrets-store-inline
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: "autosupply-aws-secrets"
 ---
 apiVersion: v1
 kind: Service

@@ -5,6 +5,7 @@ namespace: autosupply
 
 resources:
   - ../../base
+  - secret-provider-class.yaml
 
 images:
   - name: autosupply-frontend
