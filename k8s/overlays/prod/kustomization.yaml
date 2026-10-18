@@ -4,22 +4,22 @@ kind: Kustomization
 namespace: autosupply
 
 resources:
-  - ../../base
-  - secret-provider-class.yaml
+- ../../base
+- secret-provider-class.yaml
 
 images:
-  - name: autosupply-frontend
-    newName: autosupply-frontend
-    newTag: latest
-  - name: autosupply-auth-service
-    newName: autosupply-auth-service
-    newTag: latest
-  - name: autosupply-supplier-service
-    newName: autosupply-supplier-service
-    newTag: latest
-  - name: autosupply-component-service
-    newName: autosupply-component-service
-    newTag: latest
-  - name: autosupply-order-service
-    newName: autosupply-order-service
-    newTag: latest
+- name: autosupply-auth-service
+  newName: 824813378441.dkr.ecr.us-east-1.amazonaws.com/autosupply-auth-service
+  newTag: a6c3c1092882cf604e488ec7c93e7bdbcf02228c
+- name: autosupply-component-service
+  newName: 824813378441.dkr.ecr.us-east-1.amazonaws.com/autosupply-component-service
+  newTag: a6c3c1092882cf604e488ec7c93e7bdbcf02228c
+- name: autosupply-frontend
+  newName: 824813378441.dkr.ecr.us-east-1.amazonaws.com/autosupply-frontend
+  newTag: a6c3c1092882cf604e488ec7c93e7bdbcf02228c
+- name: autosupply-order-service
+  newName: 824813378441.dkr.ecr.us-east-1.amazonaws.com/autosupply-order-service
+  newTag: a6c3c1092882cf604e488ec7c93e7bdbcf02228c
+- name: autosupply-supplier-service
+  newName: 824813378441.dkr.ecr.us-east-1.amazonaws.com/autosupply-supplier-service
+  newTag: a6c3c1092882cf604e488ec7c93e7bdbcf02228c
