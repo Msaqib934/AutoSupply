@@ -5,6 +5,7 @@ on:
     workflows: ["CI - Build & Push to AWS ECR"]
     types: [completed]
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
