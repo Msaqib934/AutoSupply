@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+      push_images:
+        description: 'Push Docker images to Amazon ECR'
+        required: false
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -91,7 +97,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
-          push: ${{ github.event_name == 'push' }}
+          push: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.push_images) }}
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/autosupply-frontend:${{ github.sha }}
             ${{ steps.login-ecr.outputs.registry }}/autosupply-frontend:latest
@@ -137,7 +143,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./${{ matrix.path }}
-          push: ${{ github.event_name == 'push' }}
+          push: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.push_images) }}
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/autosupply-${{ matrix.name }}:${{ github.sha }}
             ${{ steps.login-ecr.outputs.registry }}/autosupply-${{ matrix.name }}:latest
