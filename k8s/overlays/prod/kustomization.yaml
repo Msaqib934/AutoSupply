@@ -10,16 +10,16 @@ resources:
 images:
 - name: autosupply-auth-service
   newName: 824813378441.dkr.ecr.us-east-1.amazonaws.com/autosupply-auth-service
-  newTag: c78785169c2e2b386c4e53c55eeb168c1ce95f70
+  newTag: 2f91114ae96fa3de51e9e4edcaddf3a402f0b7f4
 - name: autosupply-component-service
   newName: 824813378441.dkr.ecr.us-east-1.amazonaws.com/autosupply-component-service
-  newTag: c78785169c2e2b386c4e53c55eeb168c1ce95f70
+  newTag: 2f91114ae96fa3de51e9e4edcaddf3a402f0b7f4
 - name: autosupply-frontend
   newName: 824813378441.dkr.ecr.us-east-1.amazonaws.com/autosupply-frontend
-  newTag: c78785169c2e2b386c4e53c55eeb168c1ce95f70
+  newTag: 2f91114ae96fa3de51e9e4edcaddf3a402f0b7f4
 - name: autosupply-order-service
   newName: 824813378441.dkr.ecr.us-east-1.amazonaws.com/autosupply-order-service
-  newTag: c78785169c2e2b386c4e53c55eeb168c1ce95f70
+  newTag: 2f91114ae96fa3de51e9e4edcaddf3a402f0b7f4
 - name: autosupply-supplier-service
   newName: 824813378441.dkr.ecr.us-east-1.amazonaws.com/autosupply-supplier-service
-  newTag: c78785169c2e2b386c4e53c55eeb168c1ce95f70
+  newTag: 2f91114ae96fa3de51e9e4edcaddf3a402f0b7f4
