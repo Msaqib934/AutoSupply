@@ -25,25 +25,16 @@ spec:
             - name: PORT
               value: "8002"
             - name: DB_USER
-              valueFrom:
-                secretKeyRef:
-                  name: autosupply-secrets
-                  key: DB_USER
+              value: "postgres"
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: autosupply-secrets
                   key: DB_PASSWORD
             - name: DB_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: autosupply-secrets
-                  key: DB_HOST
+              value: "database-1.cperf7tnhj6s.us-east-1.rds.amazonaws.com"
             - name: DB_PORT
-              valueFrom:
-                secretKeyRef:
-                  name: autosupply-secrets
-                  key: DB_PORT
+              value: "5432"
             - name: DATABASE_URL
               value: "postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/autosupply_supplier"
           resources:
