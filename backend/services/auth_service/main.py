@@ -11,26 +11,23 @@ from sqlalchemy.orm import Mapped, Session, mapped_column
 
 try:
     from .common.config import get_common_settings
-    from .common.db import Base, TimestampMixin, create_db_helpers
+    from .common.db import Base, TimestampMixin, create_db_helpers, get_database_url
     from .common.deps import AuthUser, get_current_user_context, require_permission
     from .common.errors import AuthenticationError, ConflictError, register_error_handlers
     from .common.permissions import Permission, Role, permissions_for
     from .common.security import create_access_token, dummy_verify, hash_password, verify_password
 except (ImportError, ValueError):
     from common.config import get_common_settings
-    from common.db import Base, TimestampMixin, create_db_helpers
+    from common.db import Base, TimestampMixin, create_db_helpers, get_database_url
     from common.deps import AuthUser, get_current_user_context, require_permission
     from common.errors import AuthenticationError, ConflictError, register_error_handlers
     from common.permissions import Permission, Role, permissions_for
     from common.security import create_access_token, dummy_verify, hash_password, verify_password
 
 # Database configuration
-DATABASE_URL = os.getenv(
-    "AUTH_DATABASE_URL",
-    os.getenv(
-        "DATABASE_URL",
-        "postgresql+psycopg://autosupply:autosupply@localhost:5432/autosupply_auth",
-    ),
+DATABASE_URL = get_database_url(
+    default_db_name="autosupply_auth",
+    service_prefix="AUTH_",
 )
 engine, SessionLocal, get_db = create_db_helpers(DATABASE_URL)
 

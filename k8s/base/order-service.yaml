@@ -24,19 +24,16 @@ spec:
           env:
             - name: PORT
               value: "8004"
-            - name: DB_USER
-              value: "postgres"
-            - name: DB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: autosupply-secrets
-                  key: DB_PASSWORD
             - name: DB_HOST
               value: "database-1.cperf7tnhj6s.us-east-1.rds.amazonaws.com"
             - name: DB_PORT
               value: "5432"
-            - name: DATABASE_URL
-              value: "postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/autosupply_order"
+            - name: DB_USER
+              value: "postgres"
+            - name: DB_NAME
+              value: "autosupply_order"
+            - name: DB_PASSWORD_FILE
+              value: "/mnt/secrets-store/db_password"
             - name: SUPPLIER_SERVICE_URL
               value: "http://supplier-service:8002"
             - name: COMPONENT_SERVICE_URL

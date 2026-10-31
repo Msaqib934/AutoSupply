@@ -26,7 +26,7 @@ from sqlalchemy.orm import Mapped, Session, mapped_column
 
 try:
     from .common.config import get_common_settings
-    from .common.db import Base, TimestampMixin, create_db_helpers
+    from .common.db import Base, TimestampMixin, create_db_helpers, get_database_url
     from .common.deps import AuthUser, require_permission
     from .common.errors import (
         ConflictError,
@@ -36,7 +36,7 @@ try:
     from .common.permissions import Permission
 except (ImportError, ValueError):
     from common.config import get_common_settings
-    from common.db import Base, TimestampMixin, create_db_helpers
+    from common.db import Base, TimestampMixin, create_db_helpers, get_database_url
     from common.deps import AuthUser, require_permission
     from common.errors import (
         ConflictError,
@@ -46,12 +46,9 @@ except (ImportError, ValueError):
     from common.permissions import Permission
 
 # Database configuration
-DATABASE_URL = os.getenv(
-    "COMPONENT_DATABASE_URL",
-    os.getenv(
-        "DATABASE_URL",
-        "postgresql+psycopg://autosupply:autosupply@localhost:5432/autosupply_component",
-    ),
+DATABASE_URL = get_database_url(
+    default_db_name="autosupply_component",
+    service_prefix="COMPONENT_",
 )
 engine, SessionLocal, get_db = create_db_helpers(DATABASE_URL)
 
