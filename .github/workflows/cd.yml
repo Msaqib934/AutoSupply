@@ -29,17 +29,37 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Update Image Tags in Kustomize
+      - name: Update Only Built Images in Kustomize
         run: |
           cd k8s/overlays/prod
           REGISTRY="${{ steps.login-ecr.outputs.registry }}"
           TAG="${{ github.event.workflow_run.head_sha }}"
 
-          kustomize edit set image autosupply-frontend=$REGISTRY/autosupply-frontend:$TAG
-          kustomize edit set image autosupply-auth-service=$REGISTRY/autosupply-auth-service:$TAG
-          kustomize edit set image autosupply-supplier-service=$REGISTRY/autosupply-supplier-service:$TAG
-          kustomize edit set image autosupply-component-service=$REGISTRY/autosupply-component-service:$TAG
-          kustomize edit set image autosupply-order-service=$REGISTRY/autosupply-order-service:$TAG
+          echo "Target tag from CI run: $TAG"
+
+          # Function to verify image tag existence in ECR before patching Kustomize
+          update_if_exists() {
+            local service_name="$1"
+            local repo_name="autosupply-${service_name}"
+
+            echo "Checking ECR for $repo_name:$TAG..."
+            if aws ecr describe-images \
+              --repository-name "$repo_name" \
+              --image-ids imageTag="$TAG" \
+              --region "${{ secrets.AWS_REGION }}" > /dev/null 2>&1; then
+              echo "==> Tag $TAG exists in ECR. Updating Kustomize for $repo_name..."
+              kustomize edit set image "autosupply-${service_name}=$REGISTRY/${repo_name}:$TAG"
+            else
+              echo "==> Skipping $repo_name: Tag $TAG not found in ECR (not built in this CI run)."
+            fi
+          }
+
+          # Check and update all services selectively
+          update_if_exists "frontend"
+          update_if_exists "auth-service"
+          update_if_exists "supplier-service"
+          update_if_exists "component-service"
+          update_if_exists "order-service"
 
       - name: Commit & Push to Git
         run: |
